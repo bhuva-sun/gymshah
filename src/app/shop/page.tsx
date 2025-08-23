@@ -2,8 +2,9 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { productFilterSchema } from "@/lib/validation";
 
-export default async function ShopPage({ searchParams }: { searchParams: Record<string, string | string[]> }) {
-  const parsed = productFilterSchema.safeParse(searchParams);
+export default async function ShopPage({ searchParams }: { searchParams: Promise<Record<string, string | string[]>> }) {
+  const params = await searchParams;
+  const parsed = productFilterSchema.safeParse(params);
   const { q, category, sort, min, max, page = 1, size = 12 } = parsed.success ? parsed.data : {} as any;
   const where: any = {};
   if (q) where.title = { contains: q, mode: "insensitive" };
@@ -13,7 +14,12 @@ export default async function ShopPage({ searchParams }: { searchParams: Record<
     if (typeof min === "number") where.price.gte = min;
     if (typeof max === "number") where.price.lte = max;
   }
-  const orderBy = sort === "price_asc" ? { price: "asc" } : sort === "price_desc" ? { price: "desc" } : sort === "rating" ? { rating: "desc" } : sort === "popularity" ? { popularity: "desc" } : { createdAt: "desc" };
+  
+  let orderBy: any = { createdAt: "desc" };
+  if (sort === "price_asc") orderBy = { price: "asc" };
+  else if (sort === "price_desc") orderBy = { price: "desc" };
+  else if (sort === "rating") orderBy = { rating: "desc" };
+  else if (sort === "popularity") orderBy = { popularity: "desc" };
 
   const [items, total] = await Promise.all([
     prisma.product.findMany({ where, orderBy, skip: (page - 1) * size, take: size }),

@@ -12,7 +12,7 @@ export default async function CartPage() {
       })
     : null;
   const items = cart?.items ?? [];
-  const total = items.reduce((sum, it) => sum + Number(it.price ?? it.product.price) * it.quantity, 0);
+  const total = items.reduce((sum, it) => sum + Number(it.product.price) * it.quantity, 0);
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-4">Cart</h1>

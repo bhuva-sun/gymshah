@@ -1,16 +1,22 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import NextAuth, { NextAuthConfig } from "next-auth";
+import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import GitHub from "next-auth/providers/github";
 import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import { compare } from "bcrypt";
 
-export const authConfig: NextAuthConfig = {
+export const authConfig = {
 	adapter: PrismaAdapter(prisma),
 	providers: [
-		Google,
-		GitHub,
+		Google({
+			clientId: process.env.AUTH_GOOGLE_ID || "",
+			clientSecret: process.env.AUTH_GOOGLE_SECRET || "",
+		}),
+		GitHub({
+			clientId: process.env.AUTH_GITHUB_ID || "",
+			clientSecret: process.env.AUTH_GITHUB_SECRET || "",
+		}),
 		Credentials({
 			name: "credentials",
 			credentials: {
@@ -30,7 +36,7 @@ export const authConfig: NextAuthConfig = {
 		}),
 	],
 	callbacks: {
-		async signIn({ user, account }) {
+		async signIn({ user, account }: { user: any; account: any }) {
 			// Create welcome notification on first sign-in
 			try {
 				const existing = await prisma.notification.findFirst({ where: { userId: user.id, title: "Welcome to GymShah" } });
@@ -40,22 +46,22 @@ export const authConfig: NextAuthConfig = {
 			} catch (_) {}
 			return true;
 		},
-		async session({ session, token, user }) {
+		async session({ session, token, user }: { session: any; token: any; user: any }) {
 			if (session.user) {
 				(session.user as any).id = user?.id ?? token.sub;
 				(session.user as any).role = (user as any)?.role ?? (token as any).role ?? "USER";
 			}
 			return session;
 		},
-		async jwt({ token, user }) {
+		async jwt({ token, user }: { token: any; user: any }) {
 			if (user) {
-				(token as any).role = (user as any).role ?? "USER";
+				(token as any).role = (user as any)?.role ?? "USER";
 			}
 			return token;
 		},
 	},
 	// Use JWT strategy; NextAuth manages cookie securely in production
-	session: { strategy: "jwt" },
+	session: { strategy: "jwt" as const },
 	debug: process.env.NODE_ENV === "development",
 	trustHost: true,
 };
