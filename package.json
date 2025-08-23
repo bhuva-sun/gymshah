@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "postbuild": "prisma generate",
     "deploy": "bash scripts/deploy.sh",
     "setup-env": "bash scripts/setup-env.sh",
     "setup-db": "bash scripts/setup-db.sh",
