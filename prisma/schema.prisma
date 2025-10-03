@@ -1,53 +1,13 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-}
-
-// --------------------
-// Models
-// --------------------
-
-enum Role {
-  USER
-  ADMIN
-}
-
-enum OrderStatus {
-  PENDING
-  PAID
-  SHIPPED
-  DELIVERED
-  CANCELLED
-}
-
-model User {
-  id            String          @id @default(cuid())
-  name          String?
-  email         String?         @unique
-  emailVerified DateTime?
-  image         String?
-  passwordHash  String?
-  role          Role            @default(USER)
-
-  accounts      Account[]
-  sessions      Session[]
-  cart          Cart?
-  orders        Order[]
-  notifications Notification[]
-
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
 }
 
 model Account {
@@ -56,17 +16,15 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String?  @db.Text
-  access_token      String?  @db.Text
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String?  @db.Text
+  id_token          String? @db.Text
   session_state     String?
-  oauth_token_secret String?
-  oauth_token       String?
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -76,8 +34,23 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  cartItems CartItem[]
+  orders    Order[]
 }
 
 model VerificationToken {
@@ -92,49 +65,49 @@ model Product {
   id          String   @id @default(cuid())
   title       String
   slug        String   @unique
+  description String?  @db.Text
+  price       Decimal  @db.Decimal(10, 2)
   category    String
-  description String   @db.Text
-  price       Decimal  @db.Decimal(10,2)
-  stock       Int      @default(0)
-  rating      Float    @default(0)
-  image       String
-  popularity  Int      @default(0)
+  rating      Float?   @default(0)
+  popularity  Int?     @default(0)
+  imageUrl    String?
+  inStock     Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   cartItems  CartItem[]
   orderItems OrderItem[]
-}
 
-model Cart {
-  id        String     @id @default(cuid())
-  userId    String     @unique
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items     CartItem[]
-  updatedAt DateTime   @updatedAt
-  createdAt DateTime   @default(now())
+  @@index([category])
+  @@index([price])
+  @@index([createdAt])
 }
 
 model CartItem {
   id        String  @id @default(cuid())
-  cartId    String
+  userId    String
   productId String
   quantity  Int     @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  @@unique([cartId, productId])
+  @@unique([userId, productId])
 }
 
 model Order {
   id        String      @id @default(cuid())
   userId    String
-  user      User        @relation(fields: [userId], references: [id], onDelete: SetNull)
   status    OrderStatus @default(PENDING)
-  total     Decimal     @db.Decimal(10,2)
-  items     OrderItem[]
+  total     Decimal     @db.Decimal(10, 2)
+  address   String
   createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items OrderItem[]
 }
 
 model OrderItem {
@@ -142,18 +115,18 @@ model OrderItem {
   orderId   String
   productId String
   quantity  Int
-  price     Decimal @db.Decimal(10,2)
+  price     Decimal @db.Decimal(10, 2)
 
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])
+
+  @@unique([orderId, productId])
 }
 
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  body      String   @db.Text
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
 }

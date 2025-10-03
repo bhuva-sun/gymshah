@@ -1,44 +1,62 @@
-import { auth, signIn, signOut } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import Link from "next/link";
 
 export default async function AccountPage() {
-  const session = await auth();
-  if (!session) {
-    return (
-      <div className="max-w-3xl mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-2">Account</h1>
-        <form action={async () => { 'use server'; await signIn(); }}>
-          <button className="border rounded px-4 py-2">Sign in</button>
-        </form>
-      </div>
-    );
-  }
-  const orders = await prisma.order.findMany({ where: { userId: (session.user as any).id }, orderBy: { createdAt: 'desc' }, include: { items: { include: { product: true } } } });
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{session.user?.name || 'Your Account'}</h1>
-          <div className="text-sm text-muted-foreground">{session.user?.email}</div>
-        </div>
-        <form action={async () => { 'use server'; await signOut(); }}>
-          <button className="border rounded px-4 py-2">Sign out</button>
-        </form>
-      </div>
-      <section>
-        <h2 className="font-semibold mb-2">Orders</h2>
-        <div className="space-y-3">
-          {orders.length === 0 && <div>No orders yet.</div>}
-          {orders.map((o) => (
-            <div key={o.id} className="border rounded p-4">
-              <div className="flex items-center justify-between">
-                <div className="font-medium">{o.status}</div>
-                <div className="font-bold">${Number(o.total).toFixed(2)}</div>
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="w-full max-w-md">
+        <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-8 space-y-6">
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center mx-auto">
+              <span className="text-white text-2xl font-bold">G</span>
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold">
+                Account <span className="gradient-text">Access</span>
+              </h1>
+              <p className="text-muted-foreground mt-2">Sign in to your GymShah account</p>
+            </div>
+          </div>
+
+          <div className="bg-primary/5 border border-primary/20 rounded-xl p-6 text-center">
+            <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl">🛠️</span>
+            </div>
+            <h3 className="font-bold text-lg mb-2">Authentication Setup Required</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              The authentication system is ready for implementation. You can integrate your preferred auth provider or build a custom solution.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <Link 
+              href="/signup" 
+              className="w-full btn-primary py-4 rounded-xl font-semibold text-lg text-center block"
+            >
+              Create Account 🚀
+            </Link>
+            
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-4">
+                Ready to start shopping?
+              </p>
+              <div className="flex gap-3">
+                <Link 
+                  href="/shop" 
+                  className="flex-1 px-4 py-3 border border-border hover:border-primary/50 hover:bg-primary/5 rounded-xl transition-all duration-200 font-medium text-center"
+                >
+                  Browse Shop
+                </Link>
+                <Link 
+                  href="/" 
+                  className="flex-1 px-4 py-3 border border-border hover:border-primary/50 hover:bg-primary/5 rounded-xl transition-all duration-200 font-medium text-center"
+                >
+                  Go Home
+                </Link>
               </div>
             </div>
-          ))}
+          </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 }
